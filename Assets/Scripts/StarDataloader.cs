@@ -5,8 +5,8 @@ using System.IO;
 
 public class StarDataloader
 {
-    public class Star 
-    {
+  public class Star
+  {
     public float catalog_number;
     public Vector3 position;
     public Color colour;
@@ -17,10 +17,10 @@ public class StarDataloader
     private readonly float ra_proper_motion;
     private readonly float dec_proper_motion;
 
-
     // Constructor
     public Star(float catalog_number, double right_ascension, double declination, byte spectral_type,
-                byte spectral_index, short magnitude, float ra_proper_motion, float dec_proper_motion) {
+                byte spectral_index, short magnitude, float ra_proper_motion, float dec_proper_motion)
+    {
       this.catalog_number = catalog_number;
       this.right_ascension = right_ascension;
       this.declination = declination;
@@ -31,7 +31,7 @@ public class StarDataloader
       size = SetSize(magnitude);
     }
 
-    public Vector3 GetBasePosition() 
+    public Vector3 GetBasePosition()
     {
       double x = System.Math.Cos(right_ascension);
       double y = System.Math.Sin(declination);
@@ -44,9 +44,9 @@ public class StarDataloader
       return new((float)x, (float)y, (float)z);
     }
 
-    private Color SetColour(byte spectral_type, byte spectral_index) 
+    private Color SetColour(byte spectral_type, byte spectral_index)
     {
-      Color IntColour(int r, int g, int b) 
+      Color IntColour(int r, int g, int b)
       {
         return new Color(r / 255f, g / 255f, b / 255f);
       }
@@ -62,36 +62,36 @@ public class StarDataloader
       col[7] = IntColour(0xff, 0x7d, 0x24); // M9.5
 
       int col_idx = -1;
-      if (spectral_type == 'O') 
+      if (spectral_type == 'O')
       {
         col_idx = 0;
-      } 
-      else if (spectral_type == 'B') 
+      }
+      else if (spectral_type == 'B')
       {
         col_idx = 1;
-      } 
-      else if (spectral_type == 'A') 
+      }
+      else if (spectral_type == 'A')
       {
         col_idx = 2;
-      } 
-      else if (spectral_type == 'F') 
+      }
+      else if (spectral_type == 'F')
       {
         col_idx = 3;
-      } 
-      else if (spectral_type == 'G') 
+      }
+      else if (spectral_type == 'G')
       {
         col_idx = 4;
-      } 
-      else if (spectral_type == 'K') 
+      }
+      else if (spectral_type == 'K')
       {
         col_idx = 5;
-      } 
-      else if (spectral_type == 'M') 
+      }
+      else if (spectral_type == 'M')
       {
         col_idx = 6;
       }
 
-      if (col_idx == -1) 
+      if (col_idx == -1)
       {
         return Color.white;
       }
@@ -100,29 +100,29 @@ public class StarDataloader
       return Color.Lerp(col[col_idx], col[col_idx + 1], percent);
     }
 
-    private float SetSize(short magnitude) 
+    private float SetSize(short magnitude)
     {
       return 1 - Mathf.InverseLerp(-146, 796, magnitude);
     }
   }
 
-  public List<Star> LoadData() 
+  public List<Star> LoadData()
   {
     List<Star> stars = new();
     const string filename = "BSC5";
     TextAsset textAsset = Resources.Load(filename) as TextAsset;
-    if (textAsset == null) 
+    if (textAsset == null)
     {
-        Debug.LogError($"File {filename} tidak ditemukan di folder Resources.");
-    } 
-    else 
+      Debug.LogError($"File {filename} tidak ditemukan di folder Resources.");
+    }
+    else
     {
-        Debug.Log($"File {filename} berhasil dimuat. Ukuran: {textAsset.bytes.Length} bytes.");
+      Debug.Log($"File {filename} berhasil dimuat. Ukuran: {textAsset.bytes.Length} bytes.");
     }
 
     MemoryStream stream = new(textAsset.bytes);
     BinaryReader br = new(stream);
-    
+
     int sequence_offset = br.ReadInt32();
     int start_index = br.ReadInt32();
     int num_stars = -br.ReadInt32();
@@ -131,7 +131,7 @@ public class StarDataloader
     int num_magnitudes = br.ReadInt32();
     int star_data_size = br.ReadInt32();
 
-    for (int i = 0; i < num_stars; i++) 
+    for (int i = 0; i < num_stars; i++)
     {
       float catalog_number = br.ReadSingle();
       double right_ascension = br.ReadDouble();
