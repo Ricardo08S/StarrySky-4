@@ -3,7 +3,8 @@ using UnityEngine;
 
 public class StarField : MonoBehaviour {
   [Range(0, 100)]
-  [SerializeField] private float starSizeMin = 0f;
+  [SerializeField] private float starSizeMin = 0.5f;
+
   [Range(0, 100)]
   [SerializeField] private float starSizeMax = 5f;
   private List<StarDataloader.Star> stars;

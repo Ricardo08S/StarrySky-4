@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 659aa1ecfd5e7be4682fa25560dce2a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  starSizeMin: 0
+  starSizeMin: 0.5
   starSizeMax: 5
 --- !u!4 &96225057
 Transform:
