@@ -9,7 +9,7 @@ public class StarField : MonoBehaviour
   [Range(0, 100)]
   [SerializeField] private float starSizeMax = 7f;
   [Range(0.1f, 10f)]
-  [SerializeField] private float cameraSensitivity = 2f;
+  [SerializeField] private float cameraSensitivity = 5f;
   [SerializeField] private TextMeshProUGUI starInfoText;
   private List<StarDataloader.Star> stars;
   private List<GameObject> starObjects;
