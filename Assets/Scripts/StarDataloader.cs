@@ -171,7 +171,7 @@ public class StarDataloader
       {
         return Color.white;
       }
-
+      
 
       float percent = 0;
       if (spectralType.Length > 1)
@@ -189,7 +189,7 @@ public class StarDataloader
     {
       if (float.TryParse(magnitude, out float mag))
       {
-        return 1 - Mathf.InverseLerp(-146, 796, mag);
+        return 1 - Mathf.InverseLerp(-1.46f, 7.96f, mag);
       }
       else
       {
