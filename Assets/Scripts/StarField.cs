@@ -7,22 +7,28 @@ public class StarField : MonoBehaviour
   [Range(0, 100)]
   [SerializeField] private float starSizeMin = 0.5f;
   [Range(0, 100)]
-  [SerializeField] private float starSizeMax = 10f;
+  [SerializeField] private float starSizeMax = 7f;
   [Range(0.1f, 10f)]
   [SerializeField] private float cameraSensitivity = 2f;
   [SerializeField] private TextMeshProUGUI starInfoText;
   private List<StarDataloader.Star> stars;
   private List<GameObject> starObjects;
+  private Dictionary<int, GameObject> starMap = new();
   private Dictionary<int, GameObject> constellationVisible = new();
 
   private readonly int starFieldScale = 400;
 
   void Start()
   {
-
+    starObjects = new();
     StarDataloader sdl = new();
     stars = sdl.LoadData();
-    starObjects = new();
+    if (stars == null || stars.Count == 0)
+    {
+      Debug.LogError("Failed to load star data. Starfield creation aborted");
+      return;
+    }
+
     foreach (StarDataloader.Star star in stars)
     {
 
@@ -42,6 +48,7 @@ public class StarField : MonoBehaviour
       collider.radius = Mathf.Lerp(starSizeMin, starSizeMax, star.size) * 0.3f;
 
       starObjects.Add(stargo);
+      starMap.Add((int)star.catalog_number, stargo);
     }
   }
 
@@ -80,7 +87,8 @@ public class StarField : MonoBehaviour
           }
         }
       }
-      else{
+      else
+      {
         starInfoText.text = "Click on a star to see its info";
       }
     }
@@ -89,27 +97,44 @@ public class StarField : MonoBehaviour
   private void DisplayStarInfo(StarDataloader.Star star)
   {
     if (starInfoText == null)
-      {
-        Debug.LogError("StarInfoText not assigned. Please assign TextMeshProUGUI in the Inspector");
-        return;
-      }
-    string info =
-      $"Catalog Number: {star.catalog_number}\n" +
-      $"Position: {star.position}\n" +
-      $"Colour: {star.colour}\n" +
-      $"Size: {star.size}";
-      Debug.Log("Clicked Star Info:\n" + info);
+    {
+      Debug.LogError("StarInfoText not assigned. Please assign TextMeshProUGUI in the Inspector");
+      return;
+    }
+    string starName = string.IsNullOrEmpty(star.Name) ? $"HR {star.catalog_number}" : star.Name;
+    string info = "";
+    if (starName == $"HR {star.catalog_number}")
+        {
+          info =
+            $"Star Name: {starName}\n" +
+            $"Position: {star.position}\n" +
+            $"Colour: {star.colour}\n" +
+            $"Size: {star.size}";
+        }
+        else
+        {
+          info =
+            $"Star Name: {star.Name}\n" +
+            $"Alias: HR {star.catalog_number}\n" +
+            $"Position: {star.position}\n" +
+            $"Colour: {star.colour}\n" +
+            $"Size: {star.size}";
+        }
+    Debug.Log("Clicked Star Info:\n" + info);
     starInfoText.text = info;
   }
 
   private void OnValidate()
   {
-    if (starObjects != null)
+    if (starObjects != null && stars != null)
     {
       for (int i = 0; i < starObjects.Count; i++)
       {
-        Material material = starObjects[i].GetComponent<MeshRenderer>().material;
-        material.SetFloat("_Size", Mathf.Lerp(starSizeMin, starSizeMax, stars[i].size));
+        if (starObjects[i] != null && stars[i] != null)
+        {
+          Material material = starObjects[i].GetComponent<MeshRenderer>().material;
+          material.SetFloat("_Size", Mathf.Lerp(starSizeMin, starSizeMax, stars[i].size));
+        }
       }
     }
   }
@@ -191,7 +216,14 @@ public class StarField : MonoBehaviour
 
     foreach (int catalogNumber in constellation)
     {
-      starObjects[catalogNumber - 1].GetComponent<MeshRenderer>().material.color = Color.white;
+      if (starMap.ContainsKey(catalogNumber))
+      {
+        starMap[catalogNumber].GetComponent<MeshRenderer>().material.color = Color.white;
+      }
+      else
+      {
+        Debug.LogError($"Catalog Number {catalogNumber} not found in starMap");
+      }
     }
 
     GameObject constellationHolder = new($"Constellation {index}");
@@ -205,8 +237,28 @@ public class StarField : MonoBehaviour
       LineRenderer lineRenderer = line.AddComponent<LineRenderer>();
       lineRenderer.material = new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended Premultiply"));
       lineRenderer.useWorldSpace = false;
-      Vector3 pos1 = starObjects[lines[i] - 1].transform.position;
-      Vector3 pos2 = starObjects[lines[i + 1] - 1].transform.position;
+
+      Vector3 pos1 = Vector3.zero;
+      Vector3 pos2 = Vector3.zero;
+      
+      if (starMap.ContainsKey(lines[i]))
+      {
+        pos1 = starMap[lines[i]].transform.position;
+      }
+      else
+      {
+        Debug.LogError($"Catalog Number {lines[i]} not found in starMap");
+      }
+      
+      if (starMap.ContainsKey(lines[i + 1]))
+      {
+        pos2 = starMap[lines[i + 1]].transform.position;
+      }
+      else
+      {
+        Debug.LogError($"Catalog Number {lines[i + 1]} not found in starMap");
+      }
+
       Vector3 dir = (pos2 - pos1).normalized * 3;
       lineRenderer.positionCount = 2;
       lineRenderer.SetPosition(0, pos1 + dir);

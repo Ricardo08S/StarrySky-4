@@ -2,9 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
+using Newtonsoft.Json;
+using System;
 
 public class StarDataloader
 {
+  [System.Serializable]
   public class Star
   {
     public float catalog_number;
@@ -12,23 +15,89 @@ public class StarDataloader
     public Color colour;
     public float size;
 
-    private readonly double right_ascension;
-    private readonly double declination;
-    private readonly float ra_proper_motion;
-    private readonly float dec_proper_motion;
+    private double right_ascension;
+    private double declination;
+    private float ra_proper_motion;
+    private float dec_proper_motion;
+
+    [JsonProperty("RAh")]
+    public string RAh { get; set; }
+    [JsonProperty("RAm")]
+    public string RAm { get; set; }
+    [JsonProperty("RAs")]
+    public string RAs { get; set; }
+
+    [JsonProperty("DE-")]
+    public string DE_Sign { get; set; }
+    [JsonProperty("DEd")]
+    public string DEd { get; set; }
+    [JsonProperty("DEm")]
+    public string DEm { get; set; }
+    [JsonProperty("DEs")]
+    public string DEs { get; set; }
+    [JsonProperty("Vmag")]
+    public string Vmag { get; set; }
+    [JsonProperty("SpType")]
+    public string SpType { get; set; }
+
+    [JsonProperty("pmRA")]
+    public string pmRA { get; set; }
+    [JsonProperty("pmDE")]
+    public string pmDE { get; set; }
+    [JsonProperty("HR")]
+    public string HR { get; set; }
+    [JsonProperty("Name")]
+    public string Name { get; set; }
 
     // Constructor
-    public Star(float catalog_number, double right_ascension, double declination, byte spectral_type,
-                byte spectral_index, short magnitude, float ra_proper_motion, float dec_proper_motion)
+    public Star()
     {
-      this.catalog_number = catalog_number;
-      this.right_ascension = right_ascension;
-      this.declination = declination;
-      this.ra_proper_motion = ra_proper_motion;
-      this.dec_proper_motion = dec_proper_motion;
+
+    }
+    public void Initialize()
+    {
+      if (string.IsNullOrEmpty(DE_Sign))
+      {
+        DE_Sign = "+";
+      }
+
+      double ra = (double.Parse(RAh) + double.Parse(RAm) / 60.0 + double.Parse(RAs) / 3600.0) * 15 * (Math.PI / 180);
+      this.right_ascension = ra;
+
+      double dec;
+      if (DE_Sign == "-")
+      {
+        dec = -(double.Parse(DEd) + double.Parse(DEm) / 60.0 + double.Parse(DEs) / 3600.0) * (Math.PI / 180);
+      }
+      else
+      {
+        dec = (double.Parse(DEd) + double.Parse(DEm) / 60.0 + double.Parse(DEs) / 3600.0) * (Math.PI / 180);
+      }
+      this.declination = dec;
+
+      if (string.IsNullOrEmpty(pmRA))
+      {
+        this.ra_proper_motion = 0.0f;
+      }
+      else
+      {
+        this.ra_proper_motion = float.Parse(pmRA);
+      }
+      if (string.IsNullOrEmpty(pmDE))
+      {
+        this.dec_proper_motion = 0.0f;
+      }
+      else
+      {
+        this.dec_proper_motion = float.Parse(pmDE);
+      }
+
+      this.catalog_number = float.Parse(HR);
+
       position = GetBasePosition();
-      colour = SetColour(spectral_type, spectral_index);
-      size = SetSize(magnitude);
+      colour = SetColour(SpType);
+      size = SetSize(Vmag);
+
     }
 
     public Vector3 GetBasePosition()
@@ -44,7 +113,7 @@ public class StarDataloader
       return new((float)x, (float)y, (float)z);
     }
 
-    private Color SetColour(byte spectral_type, byte spectral_index)
+    private Color SetColour(string spectralType)
     {
       Color IntColour(int r, int g, int b)
       {
@@ -61,32 +130,39 @@ public class StarDataloader
       col[6] = IntColour(0xff, 0xa2, 0x5a); // M0
       col[7] = IntColour(0xff, 0x7d, 0x24); // M9.5
 
+
       int col_idx = -1;
-      if (spectral_type == 'O')
+      if (string.IsNullOrEmpty(spectralType))
+      {
+        return Color.white;
+      }
+
+
+      if (spectralType.StartsWith("O"))
       {
         col_idx = 0;
       }
-      else if (spectral_type == 'B')
+      else if (spectralType.StartsWith("B"))
       {
         col_idx = 1;
       }
-      else if (spectral_type == 'A')
+      else if (spectralType.StartsWith("A"))
       {
         col_idx = 2;
       }
-      else if (spectral_type == 'F')
+      else if (spectralType.StartsWith("F"))
       {
         col_idx = 3;
       }
-      else if (spectral_type == 'G')
+      else if (spectralType.StartsWith("G"))
       {
         col_idx = 4;
       }
-      else if (spectral_type == 'K')
+      else if (spectralType.StartsWith("K"))
       {
         col_idx = 5;
       }
-      else if (spectral_type == 'M')
+      else if (spectralType.StartsWith("M"))
       {
         col_idx = 6;
       }
@@ -96,53 +172,68 @@ public class StarDataloader
         return Color.white;
       }
 
-      float percent = (spectral_index - 0x30) / 10.0f;
+
+      float percent = 0;
+      if (spectralType.Length > 1)
+      {
+        if (float.TryParse(spectralType.Substring(1), out float spectral_index))
+        {
+          percent = (spectral_index) / 10.0f;
+        }
+      }
+
       return Color.Lerp(col[col_idx], col[col_idx + 1], percent);
     }
 
-    private float SetSize(short magnitude)
+    private float SetSize(string magnitude)
     {
-      return 1 - Mathf.InverseLerp(-146, 796, magnitude);
+      if (float.TryParse(magnitude, out float mag))
+      {
+        return 1 - Mathf.InverseLerp(-146, 796, mag);
+      }
+      else
+      {
+        return 0.1f;
+      }
     }
   }
+
 
   public List<Star> LoadData()
   {
     List<Star> stars = new();
-    const string filename = "BSC5";
+    const string filename = "bsc5-all";
+
     TextAsset textAsset = Resources.Load(filename) as TextAsset;
+
     if (textAsset == null)
     {
-      Debug.LogError($"File {filename} tidak ditemukan di folder Resources.");
+      Debug.LogError($"File {filename} not found in Resources folder.");
+      return stars;
     }
-    else
+    Debug.Log($"File {filename} Loaded Successfully, file size {textAsset.bytes.Length} bytes");
+
+    try
     {
-      Debug.Log($"File {filename} berhasil dimuat. Ukuran: {textAsset.bytes.Length} bytes.");
+      stars = JsonConvert.DeserializeObject<List<Star>>(textAsset.text);
+      if (stars != null)
+      {
+        foreach (var star in stars)
+        {
+          star.Initialize();
+        }
+      }
+      else
+      {
+        Debug.LogError("Failed to deserialize data");
+      }
+
+
     }
-
-    MemoryStream stream = new(textAsset.bytes);
-    BinaryReader br = new(stream);
-
-    int sequence_offset = br.ReadInt32();
-    int start_index = br.ReadInt32();
-    int num_stars = -br.ReadInt32();
-    int star_number_settings = br.ReadInt32();
-    int proper_motion_included = br.ReadInt32();
-    int num_magnitudes = br.ReadInt32();
-    int star_data_size = br.ReadInt32();
-
-    for (int i = 0; i < num_stars; i++)
+    catch (Exception e)
     {
-      float catalog_number = br.ReadSingle();
-      double right_ascension = br.ReadDouble();
-      double declination = br.ReadDouble();
-      byte spectral_type = br.ReadByte();
-      byte spectral_index = br.ReadByte();
-      short magnitude = br.ReadInt16();
-      float ra_proper_motion = br.ReadSingle();
-      float dec_proper_motion = br.ReadSingle();
-      Star star = new(catalog_number, right_ascension, declination, spectral_type, spectral_index, magnitude, ra_proper_motion, dec_proper_motion);
-      stars.Add(star);
+      Debug.LogError("Error parsing JSON: " + e.Message);
+      return new List<Star>();
     }
 
     return stars;
