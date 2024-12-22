@@ -11,15 +11,21 @@ public class StarField : MonoBehaviour
   [Range(0.1f, 10f)]
   [SerializeField] private float cameraSensitivity = 5f;
   [SerializeField] private TextMeshProUGUI starInfoText;
+  [SerializeField] private MenuScreenManager _menuScreenManager;
   private List<StarDataloader.Star> stars;
   private List<GameObject> starObjects;
   private Dictionary<int, GameObject> starMap = new();
   private Dictionary<int, GameObject> constellationVisible = new();
 
   private readonly int starFieldScale = 400;
-
   void Start()
   {
+    if (_menuScreenManager == null)
+    {
+      Debug.LogError("HoverScreenManager not assigned. Please assign it in the Inspector.");
+      return;
+    }
+    _menuScreenManager.SetStarFieldReference(this);
     starObjects = new();
     StarDataloader sdl = new();
     stars = sdl.LoadData();
@@ -101,26 +107,43 @@ public class StarField : MonoBehaviour
       Debug.LogError("StarInfoText not assigned. Please assign TextMeshProUGUI in the Inspector");
       return;
     }
-    string starName = string.IsNullOrEmpty(star.Name) ? $"HR {star.catalog_number}" : star.Name;
+
     string info = "";
-    if (starName == $"HR {star.catalog_number}")
+    List<string> aliases = new();
+
+    if (!string.IsNullOrEmpty(star.Name)) { aliases.Add($"{star.Name}"); }
+    aliases.Add($"HR {star.catalog_number}");
+    if (!string.IsNullOrEmpty(star.CommonName)) { aliases.Add($"{star.CommonName}"); }
+    if (!string.IsNullOrEmpty(star.FlamsteedF)) { aliases.Add($"{star.FlamsteedF}"); }
+    if (!string.IsNullOrEmpty(star.HD)) { aliases.Add($"HD {star.HD}"); }
+
+
+    string aliasText = string.Join(", ", aliases);
+
+    info = $"Aliases: {aliasText}\n" +
+            $"Position: {star.position}\n" +
+            $"Colour: {star.colour}\n" +
+            $"Size: {star.size}";
+
+
+    if (!string.IsNullOrEmpty(star.Constellation))
     {
-      info =
-        $"Star Name: {starName}\n" +
-        $"Position: {star.position}\n" +
-        $"Colour: {star.colour}\n" +
-        $"Size: {star.size}";
+      info += $"\nConstellation: {star.Constellation}";
     }
-    else
+
+    if (!string.IsNullOrEmpty(star.SpType))
     {
-      info =
-        $"Star Name: {star.Name}\n" +
-        $"Alias: HR {star.catalog_number}\n" +
-        $"Position: {star.position}\n" +
-        $"Colour: {star.colour}\n" +
-        $"Size: {star.size}";
+      info += $"\nSpectral Type: {star.SpType}";
     }
-    Debug.Log("Clicked Star Info:\n" + info);
+    if (!string.IsNullOrEmpty(star.Temperature))
+    {
+      info += $"\nTemperature: {star.Temperature} K";
+    }
+
+    info += $"\nRight Ascension: {star.RightAscension}";
+    info += $"\nDeclination: {star.Declination}";
+
+    Debug.Log("Clicked Star Info: HR " + star.catalog_number);
     starInfoText.text = info;
   }
 
@@ -199,9 +222,9 @@ public class StarField : MonoBehaviour
         221, 80, 9072, 8969, 8984, 8916, 8911, 8852
     },
     new int[] {
-        291, 383, 291, 360, 360, 437, 437, 510, 510, 596, 
-        596, 549, 549, 489, 489, 434, 434, 294, 294, 221, 
-        221, 80, 80, 9072, 9072, 8969, 8969, 8984, 8969, 8916, 
+        291, 383, 291, 360, 360, 437, 437, 510, 510, 596,
+        596, 549, 549, 489, 489, 434, 434, 294, 294, 221,
+        221, 80, 80, 9072, 9072, 8969, 8969, 8984, 8969, 8916,
         8984, 8911, 8916, 8852, 8852, 8911, 360, 383
     }),
     // Camelopardalis (B)
@@ -244,7 +267,7 @@ public class StarField : MonoBehaviour
     }),
     // Sagittarius (F)
     (new int[] {
-        6879, 6832, 6746, 6859, 7194, 6616, 6913, 7039, 6812, 7121, 
+        6879, 6832, 6746, 6859, 7194, 6616, 6913, 7039, 6812, 7121,
         7234, 7150, 7217, 7304, 7340, 7440, 7650, 7623, 7581, 7343, 7348
     },
     new int[] {
@@ -266,7 +289,7 @@ public class StarField : MonoBehaviour
     }),
     // Centaurus (H)
     (new int[] {
-        5459, 5267, 5132, 5231, 4819, 5249, 4743, 4621, 4390, 4467, 
+        5459, 5267, 5132, 5231, 4819, 5249, 4743, 4621, 4390, 4467,
         5193, 5440, 5190, 5576, 5288, 5089, 5028
     },
     new int[] {
@@ -303,7 +326,7 @@ public class StarField : MonoBehaviour
     }),
      // Cetus (L)
     (new int[] {
-        74, 188, 334, 509, 740, 811, 781, 402, 539, 708, 
+        74, 188, 334, 509, 740, 811, 781, 402, 539, 708,
         681, 779, 804, 911, 754, 718, 896, 813, 649
     },
     new int[] {
@@ -314,8 +337,8 @@ public class StarField : MonoBehaviour
     }),
     // Eridanus (M)
     (new int[] {
-        472, 566, 674, 721, 789, 794, 898, 1008, 1190, 1195, 
-        1347, 1393, 1464, 1173, 1088, 1003, 919, 818, 874, 984, 
+        472, 566, 674, 721, 789, 794, 898, 1008, 1190, 1195,
+        1347, 1393, 1464, 1173, 1088, 1003, 919, 818, 874, 984,
         1084, 1463, 1520, 1560, 1666, 1679, 1481
     },
     new int[] {
@@ -326,10 +349,10 @@ public class StarField : MonoBehaviour
         1084, 1463, 1463, 1520, 1520, 1560, 1560, 1666, 1666, 1679,
         1679, 1481
     }),
-   
+
   };
 
-  
+
   private void Update()
   {
     for (int i = 0; i < 10; i++)
@@ -340,15 +363,14 @@ public class StarField : MonoBehaviour
       }
     }
 
-    // Menangani toggle dengan huruf alfabet QWERTY
-    for (int i = 0; i < 26; i++) // 26 huruf alfabet
+    for (int i = 0; i < 26; i++)
     {
-        KeyCode key = (KeyCode)((int)KeyCode.A + i); // KeyCode A-Z
-        if (Input.GetKeyDown(key))
-        {
-            bool isCapsLock = Input.GetKey(KeyCode.CapsLock); // Cek status Caps Lock
-            ToggleConstellation(10 + i, isCapsLock); // Offset 10 untuk indeks huruf
-        }
+      KeyCode key = (KeyCode)((int)KeyCode.A + i);
+      if (Input.GetKeyDown(key))
+      {
+        bool isCapsLock = Input.GetKey(KeyCode.CapsLock);
+        ToggleConstellation(10 + i, isCapsLock);
+      }
     }
   }
 
@@ -356,23 +378,23 @@ public class StarField : MonoBehaviour
   {
     if ((index < 0) || (index >= constellations.Count))
     {
-        Debug.LogError($"Invalid constellation index: {index}");
-        return;
+      Debug.LogError($"Invalid constellation index: {index}");
+      return;
     }
 
     // Jika menggunakan alfabet, sesuaikan indeks berdasarkan Caps Lock
     if (index >= 10)
     {
-        Debug.Log($"Toggling constellation {(char)('A' + index - 10)} ({(isCapsLock ? "Caps Lock ON" : "Caps Lock OFF")})");
+      Debug.Log($"Toggling constellation {(char)('A' + index - 10)} ({(isCapsLock ? "Caps Lock ON" : "Caps Lock OFF")})");
     }
 
     if (constellationVisible.ContainsKey(index))
     {
-        RemoveConstellation(index);
+      RemoveConstellation(index);
     }
     else
     {
-        CreateConstellation(index);
+      CreateConstellation(index);
     }
   }
 
@@ -444,5 +466,51 @@ public class StarField : MonoBehaviour
     }
     Destroy(constellationVisible[index]);
     constellationVisible.Remove(index);
+  }
+
+  public void SetCameraSensitivity(float sensitivity)
+  {
+    cameraSensitivity = sensitivity;
+  }
+
+  public void SetStarSizeMin(float sizeMin)
+  {
+    starSizeMin = sizeMin;
+    UpdateStarSizes();
+  }
+
+  public void SetStarSizeMax(float sizeMax)
+  {
+    starSizeMax = sizeMax;
+    UpdateStarSizes();
+  }
+
+  public float GetCameraSensitivity()
+  {
+    return cameraSensitivity;
+  }
+  public float GetStarSizeMin()
+  {
+    return starSizeMin;
+  }
+
+  public float GetStarSizeMax()
+  {
+    return starSizeMax;
+  }
+
+  private void UpdateStarSizes()
+  {
+    if (starObjects != null && stars != null)
+    {
+      for (int i = 0; i < starObjects.Count; i++)
+      {
+        if (starObjects[i] != null && stars[i] != null)
+        {
+          Material material = starObjects[i].GetComponent<MeshRenderer>().material;
+          material.SetFloat("_Size", Mathf.Lerp(starSizeMin, starSizeMax, stars[i].size));
+        }
+      }
+    }
   }
 }

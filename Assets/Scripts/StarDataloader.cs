@@ -14,6 +14,9 @@ public class StarDataloader
     public Vector3 position;
     public Color colour;
     public float size;
+    public string RightAscension { get; private set; }
+    public string Declination { get; private set; }
+
 
     private double right_ascension;
     private double declination;
@@ -49,6 +52,17 @@ public class StarDataloader
     [JsonProperty("Name")]
     public string Name { get; set; }
 
+    [JsonProperty("Constellation")]
+    public string Constellation { get; set; }
+    [JsonProperty("K")]
+    public string Temperature { get; set; }
+    [JsonProperty("Common")]
+    public string CommonName { get; set; }
+    [JsonProperty("FlamsteedF")]
+    public string FlamsteedF { get; set; }
+    [JsonProperty("HD")]
+    public string HD { get; set; }
+
     // Constructor
     public Star()
     {
@@ -56,15 +70,15 @@ public class StarDataloader
     }
     public void Initialize()
     {
+      double ra = (double.Parse(RAh) + double.Parse(RAm) / 60.0 + double.Parse(RAs) / 3600.0) * 15 * (Math.PI / 180);
+      this.right_ascension = ra;
+
+      double dec;
       if (string.IsNullOrEmpty(DE_Sign))
       {
         DE_Sign = "+";
       }
 
-      double ra = (double.Parse(RAh) + double.Parse(RAm) / 60.0 + double.Parse(RAs) / 3600.0) * 15 * (Math.PI / 180);
-      this.right_ascension = ra;
-
-      double dec;
       if (DE_Sign == "-")
       {
         dec = -(double.Parse(DEd) + double.Parse(DEm) / 60.0 + double.Parse(DEs) / 3600.0) * (Math.PI / 180);
@@ -94,10 +108,21 @@ public class StarDataloader
 
       this.catalog_number = float.Parse(HR);
 
+      if (string.IsNullOrEmpty(FlamsteedF))
+      {
+        FlamsteedF = "";
+      }
+      if (string.IsNullOrEmpty(HD))
+      {
+        HD = "";
+      }
+
       position = GetBasePosition();
       colour = SetColour(SpType);
       size = SetSize(Vmag);
 
+      this.RightAscension = $"{double.Parse(RAh):00}h {double.Parse(RAm):00}m {double.Parse(RAs):00.00}s";
+      this.Declination = $"{DE_Sign}{double.Parse(DEd):00}° {double.Parse(DEm):00}' {double.Parse(DEs):00.00}\"";
     }
 
     public Vector3 GetBasePosition()
@@ -171,7 +196,7 @@ public class StarDataloader
       {
         return Color.white;
       }
-      
+
 
       float percent = 0;
       if (spectralType.Length > 1)
